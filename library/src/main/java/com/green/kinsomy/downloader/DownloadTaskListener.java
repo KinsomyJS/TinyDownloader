@@ -21,5 +21,6 @@ public interface DownloadTaskListener {
     int DOWNLOAD_ERROR_FILE_NOT_FOUND = 0x01;
     int DOWNLOAD_ERROR_IO_ERROR = 0x02;
     int DOWNLOAD_ERROR_HTTP_ERROR = 0x03;
+    int DOWNLOAD_ERROR_NO_TASK = 0x04;
 
 }

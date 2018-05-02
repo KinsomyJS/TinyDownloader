@@ -120,10 +120,12 @@ public class DownloadTask implements Runnable, Parcelable {
 				}
 
 				mCompletedSize = randomAccessFile.length();
+				Log.d(TAG, "run: after while " + mCompletedSize + "---" + mTotalSize);
 				if ((mCompletedSize == mTotalSize && mDownloadStatus == DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING)
 						|| mDownloadStatus == DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING_WITHOUT_PROGRESS) {
 					mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
 				}
+				onDownloading();
 			}
 		} catch (FileNotFoundException e) {
 			mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;

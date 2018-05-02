@@ -142,6 +142,7 @@ public class DownloadManager {
 		MusesLog.D(d, TAG, TAG + " start task task size = " + mTaskQueue.size());
 		if (downloadTask == null || mDownloadingIds.contains(downloadTask.getId())) {
 			MusesLog.D(d, TAG, "can't start downloadtask");
+			mListener.onError(null, DownloadTaskListener.DOWNLOAD_ERROR_NO_TASK);
 			return;
 		} else if (downloadTask != null && !mTaskQueue.containsKey(downloadTask.getId())) {
 			mTaskQueue.put(downloadTask.getId(), downloadTask);
