@@ -1,4 +1,0 @@
-#Wed May 02 10:23:08 CST 2018
-base.0=/Users/kinsomy/github/Muses/sample/build/intermediates/transforms/dex/release/0
-renamed.0=classes.dex
-file.0=/Users/kinsomy/github/Muses/sample/build/intermediates/transforms/dex/release/0/classes.dex

@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config=":library"><source path="/Users/kinsomy/github/Muses/library/build/intermediates/bundles/debug/assets"/></dataSet><dataSet config="main"><source path="/Users/kinsomy/github/Muses/sample/src/main/assets"/><source path="/Users/kinsomy/github/Muses/sample/build/generated/assets/shaders/debug"/></dataSet><dataSet config="debug"><source path="/Users/kinsomy/github/Muses/sample/src/debug/assets"/></dataSet></merger>
