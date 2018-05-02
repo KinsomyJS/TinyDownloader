@@ -10,6 +10,7 @@ import com.green.kinsomy.downloader.db.DbHelper;
 import com.green.kinsomy.downloader.db.DownloadDBEntity;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +26,9 @@ public class DownloadManager {
 	private final String TAG = "DownloadManager";
 	private DbHelper mDbHelper;
 	private ExecutorService mExecutorService;
-	private Map<String, DownloadTask> mCurrentTasks = new HashMap<>();
+	private Map<String, DownloadTask> mTaskQueue = new HashMap<>();
+	private ArrayList<String> mDownloadingIds = new ArrayList<>();
+
 	private Context mContext;
 	private DownloadTaskListener mListener = new DownloadTaskListener() {
 		@Override
@@ -35,7 +38,7 @@ public class DownloadManager {
 
 		@Override
 		public void onStart(DownloadTask downloadTask) {
-			MusesLog.D(d, TAG, TAG + " task onStart size= " + mCurrentTasks.size());
+			MusesLog.D(d, TAG, TAG + " task onStart size= " + mTaskQueue.size());
 			sendBroadcast(AbsDownloadReceiver.TASK_STARTDOWN, downloadTask);
 		}
 
@@ -106,8 +109,8 @@ public class DownloadManager {
 		if (id.isEmpty()) {
 			id = url.hashCode() + "";
 		}
-		if (mCurrentTasks.containsKey(id)) {
-			return mCurrentTasks.get(id);
+		if (mTaskQueue.containsKey(id)) {
+			return mTaskQueue.get(id);
 		}
 		MusesLog.D(d, TAG, "add task name = " + name + "  taskid = " + id);
 		if (getDownSave(dir) == null || getDownSave(dir).isEmpty()) {
@@ -121,27 +124,37 @@ public class DownloadManager {
 			dbEntity = new DownloadDBEntity(id, 0l,
 					0l, url, getDownSave(dir), name, DownloadStatus.DOWNLOAD_STATUS_INIT);
 			mDbHelper.insert(dbEntity);
+			File file = new File(getDownSave(dir) + name);
+			if (file.exists()) {
+				file.delete();
+			}
+
 		}
 		DownloadTask downloadTask = DownloadTask.parse(dbEntity, mContext);
-		if (downloadTask != null && !mCurrentTasks.containsKey(downloadTask.getId())) {
+		if (downloadTask != null && !mTaskQueue.containsKey(downloadTask.getId())) {
 			MusesLog.D(d, TAG, "task id = " + downloadTask.getId());
-			mCurrentTasks.put(downloadTask.getId(), downloadTask);
+			mTaskQueue.put(downloadTask.getId(), downloadTask);
 		}
 		return downloadTask;
 	}
 
 	public void startTask(DownloadTask downloadTask) {
-		MusesLog.D(d, TAG, TAG + " start task task size = " + mCurrentTasks.size());
-		if (downloadTask == null) {
+		MusesLog.D(d, TAG, TAG + " start task task size = " + mTaskQueue.size());
+		if (downloadTask == null || mDownloadingIds.contains(downloadTask.getId())) {
 			MusesLog.D(d, TAG, "can't start downloadtask");
 			return;
+		} else if (downloadTask != null && !mTaskQueue.containsKey(downloadTask.getId())) {
+			mTaskQueue.put(downloadTask.getId(), downloadTask);
 		}
+
 		MusesLog.D(d, TAG, "start task ,task name = " + downloadTask.getFileName() + "  taskid = " + downloadTask.getId());
-		if (downloadTask.getDownloadStatus() != DownloadStatus.DOWNLOAD_STATUS_COMPLETED) {
+		File file = new File(downloadTask.getSaveDirPath() + downloadTask.getFileName());
+		if (downloadTask.getDownloadStatus() != DownloadStatus.DOWNLOAD_STATUS_COMPLETED || !file.exists()) {
 			downloadTask.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PREPARE);
 			downloadTask.setdownFileStore(mDbHelper);
 			Log.e(TAG, "(mListener == null) " + (mListener == null));
 			downloadTask.addDownloadListener(mListener);
+			mDownloadingIds.add(downloadTask.getId());
 			// TODO: 2018/4/11  自定义下载任务优先级
 			mExecutorService.execute(new PriorityRunnable(Priority.LOW, downloadTask));
 		} else {
@@ -156,7 +169,7 @@ public class DownloadManager {
 	 * @return
 	 */
 	public void resume(String taskId) {
-		DownloadTask resumeTask = mCurrentTasks.get(taskId);
+		DownloadTask resumeTask = mTaskQueue.get(taskId);
 		if (resumeTask == null || resumeTask.getDownloadStatus() == DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING) {
 			MusesLog.D(d, TAG, "no resume task = " + taskId);
 			return;
@@ -172,13 +185,16 @@ public class DownloadManager {
 	 */
 	public void cancel(String taskId) {
 		mDbHelper.deleteTask(taskId);
-		DownloadTask cancelTask = mCurrentTasks.get(taskId);
+		DownloadTask cancelTask = mTaskQueue.get(taskId);
 		if (cancelTask == null) {
 			MusesLog.D(d, TAG, "no cancel task = " + taskId);
 			return;
 		}
 		cancelTask.cancel();
-		mCurrentTasks.remove(taskId);
+		mTaskQueue.remove(taskId);
+		if (mDownloadingIds.contains(taskId)) {
+			mDownloadingIds.remove(taskId);
+		}
 		MusesLog.D(d, TAG, "cancel task = " + taskId);
 	}
 
@@ -188,12 +204,15 @@ public class DownloadManager {
 	 * @param taskId
 	 */
 	public void pause(String taskId) {
-		DownloadTask pauseTask = mCurrentTasks.get(taskId);
+		DownloadTask pauseTask = mTaskQueue.get(taskId);
 		if (pauseTask == null) {
 			MusesLog.D(d, TAG, "no pause task = " + taskId);
 			return;
 		}
 		pauseTask.pause();
+		if (mDownloadingIds.contains(taskId)) {
+			mDownloadingIds.remove(taskId);
+		}
 
 		MusesLog.D(d, TAG, "pause task = " + taskId);
 	}

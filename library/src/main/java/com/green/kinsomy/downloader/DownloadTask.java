@@ -91,7 +91,7 @@ public class DownloadTask implements Runnable, Parcelable {
 			Log.d(TAG, "run: onStart()");
 
 			URL url = new URL(mUrl);
-			conn = tryConnect(url);
+			conn = Connect(url, true);
 			if (conn != null) {
 				inputStream = conn.getInputStream();
 				if (mTotalSize <= 0) {
@@ -118,9 +118,10 @@ public class DownloadTask implements Runnable, Parcelable {
 					randomAccessFile.write(buffer, 0, length);
 					mCompletedSize += length;
 				}
-				stopTimer();
-				onDownloading();
-				if (mCompletedSize == mTotalSize) {
+
+				mCompletedSize = randomAccessFile.length();
+				if ((mCompletedSize == mTotalSize && mDownloadStatus == DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING)
+						|| mDownloadStatus == DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING_WITHOUT_PROGRESS) {
 					mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
 				}
 			}
@@ -133,6 +134,7 @@ public class DownloadTask implements Runnable, Parcelable {
 			onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
 			return;
 		} finally {
+			stopTimer();
 			mDbEntity.setCompletedSize(mCompletedSize);
 			mDbEntity.setDownloadStatus(mDownloadStatus);
 			mDbHelper.update(mDbEntity);
@@ -172,7 +174,8 @@ public class DownloadTask implements Runnable, Parcelable {
 		}
 	}
 
-	private HttpURLConnection handleConnect(URL url, boolean supportBP) throws IOException {
+	//连接
+	private HttpURLConnection Connect(URL url, boolean supportBP) throws IOException {
 		HttpURLConnection conn;
 		conn = (HttpURLConnection) url.openConnection();
 		conn = HttpConnectionHelper.setConnectParam(conn);
@@ -180,44 +183,28 @@ public class DownloadTask implements Runnable, Parcelable {
 			conn.setRequestProperty("Range", "bytes=" + mCompletedSize + "-");
 		}
 		conn.connect();
-		return conn;
-	}
-
-	//首次尝试连接
-	private HttpURLConnection tryConnect(URL url) throws IOException {
-		HttpURLConnection conn;
-		conn = (HttpURLConnection) url.openConnection();
-		conn = HttpConnectionHelper.setConnectParam(conn);
-		conn.setRequestProperty("Range", "bytes=" + 0 + "-");
-		conn.connect();
-		long len = conn.getContentLength();
-		if (len > 0) {
-			mTotalSize = len;
-			Log.d(TAG, mFileName + "run : content-length" + mTotalSize);
-		}
-		if (len > 0 && mCompletedSize == len) {
-			mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
-			mDbEntity.setTotalSize(mTotalSize);
-			mDbEntity.setDownloadStatus(mDownloadStatus);
-			mDbEntity.setCompletedSize(mCompletedSize);
-			mDbHelper.update(mDbEntity);
-			Log.d(TAG, mFileName + "tryConnect: onCompleted");
-			onCompleted();
-			return null;
-		}
 		int code = conn.getResponseCode();
-		Log.d(TAG, mFileName + "tryConnect: code" + code);
+		long len = conn.getContentLength();
+		Log.d(TAG, mFileName + "Connect: code" + code);
 		if (code == HttpURLConnection.HTTP_PARTIAL) {
+			if (len > 0 && mTotalSize <= 0) {
+				mTotalSize = len;
+				Log.d(TAG, mFileName + "run : content-length" + mTotalSize);
+			}
 			//支持断点，直接下载
-			return handleConnect(url,true);
+			return conn;
 		} else if (code == HttpURLConnection.HTTP_OK) {
+			if (len > 0 && mTotalSize <= 0) {
+				mTotalSize = len;
+				Log.d(TAG, mFileName + "run : content-length" + mTotalSize);
+			}
 			//不支持断点，清空已完成进度
 			mCompletedSize = 0;
-			return conn;
+			return Connect(url, false);
 		} else if (mRetry <= MAX_RETRY) {
 			Log.d(TAG, "run: mRetry" + mFileName + "--" + mRetry);
 			mRetry++;
-			return tryConnect(url);
+			return Connect(url, true);
 		} else {
 			mRetry = 0;
 			onError(DownloadTaskListener.DOWNLOAD_ERROR_HTTP_ERROR);
@@ -344,14 +331,6 @@ public class DownloadTask implements Runnable, Parcelable {
 		this.mCompletedSize = completedSize;
 	}
 
-	public String getSaveDirPath() {
-		return mSaveDirPath;
-	}
-
-	public void setSaveDirPath(String saveDirPath) {
-		this.mSaveDirPath = saveDirPath;
-	}
-
 	public int getDownloadStatus() {
 		return mDownloadStatus;
 	}
@@ -364,40 +343,22 @@ public class DownloadTask implements Runnable, Parcelable {
 		this.mDbHelper = dbHelper;
 	}
 
-	public void setDbEntity(DownloadDBEntity dbEntity) {
-		this.mDbEntity = dbEntity;
-	}
-
-	public DownloadDBEntity getDbEntity() {
-		return mDbEntity;
-	}
-
-	public String getUrl() {
-		return mUrl;
-	}
-
-	public void setUrl(String url) {
-		this.mUrl = url;
-	}
-
 	public String getFileName() {
 		return mFileName;
 	}
 
-	public void setFileName(String fileName) {
-		this.mFileName = fileName;
+	public String getSaveDirPath() {
+		return mSaveDirPath;
 	}
 
 	public void cancel() {
 		setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_CANCEL);
 		File temp = new File(mSaveDirPath + mFileName);
 		if (temp.exists()) temp.delete();
-		stopTimer();
 	}
 
 	public void pause() {
 		setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PAUSE);
-		stopTimer();
 
 	}
 
