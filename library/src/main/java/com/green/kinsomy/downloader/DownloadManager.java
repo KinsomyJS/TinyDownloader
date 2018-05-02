@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Environment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.green.kinsomy.downloader.db.DbHelper;
 import com.green.kinsomy.downloader.db.DownloadDBEntity;
@@ -37,38 +36,38 @@ public class DownloadManager {
 		@Override
 		public void onStart(DownloadTask downloadTask) {
 			MusesLog.D(d, TAG, TAG + " task onStart size= " + mCurrentTasks.size());
-			sendBroadcast(AbsDownloadReceiver.TASK_STARTDOWN,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_STARTDOWN, downloadTask);
 		}
 
 		@Override
 		public void onDownloading(DownloadTask downloadTask) {
 			MusesLog.D(d, TAG, TAG + " task onDownloading");
-			sendBroadcast(AbsDownloadReceiver.TASK_DOWNLOADING,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_DOWNLOADING, downloadTask);
 		}
 
 		@Override
 		public void onPause(DownloadTask downloadTask) {
 			MusesLog.D(d, TAG, TAG + " task onPause");
-			sendBroadcast(AbsDownloadReceiver.TASK_PAUSE,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_PAUSE, downloadTask);
 		}
 
 		@Override
 		public void onCancel(DownloadTask downloadTask) {
 			MusesLog.D(d, TAG, TAG + " task onCancel");
-			sendBroadcast(AbsDownloadReceiver.TASK_CANCEL,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_CANCEL, downloadTask);
 		}
 
 		@Override
 		public void onCompleted(DownloadTask downloadTask) {
 			MusesLog.D(d, TAG, TAG + " task Completed");
 			MusesLog.D(d, TAG, "complete task and start");
-			sendBroadcast(AbsDownloadReceiver.TASK_COMPLETED,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_COMPLETED, downloadTask);
 		}
 
 		@Override
 		public void onError(DownloadTask downloadTask, int errorCode) {
 			MusesLog.D(d, TAG, TAG + " task onError");
-			sendBroadcast(AbsDownloadReceiver.TASK_ERROR,downloadTask);
+			sendBroadcast(AbsDownloadReceiver.TASK_ERROR, downloadTask);
 		}
 	};
 
@@ -92,14 +91,12 @@ public class DownloadManager {
 			if (!file.exists()) {
 				boolean r = file.mkdirs();
 				if (!r) {
-					Toast.makeText(mContext, "储存卡无法创建文件", Toast.LENGTH_SHORT).show();
 					return null;
 				}
 				return file.getAbsolutePath() + "/";
 			}
 			return file.getAbsolutePath() + "/";
 		} else {
-			Toast.makeText(mContext, "没有储存卡", Toast.LENGTH_SHORT).show();
 			return null;
 		}
 	}
@@ -113,6 +110,11 @@ public class DownloadManager {
 			return mCurrentTasks.get(id);
 		}
 		MusesLog.D(d, TAG, "add task name = " + name + "  taskid = " + id);
+		if (getDownSave(dir) == null || getDownSave(dir).isEmpty()) {
+			mListener.onError(null, DownloadTaskListener.DOWNLOAD_ERROR_FILE_NOT_FOUND);
+			return null;
+		}
+
 		DownloadDBEntity dbEntity = mDbHelper.getDownLoadedList(id + "");
 		//是否有缓存
 		if (dbEntity == null) {
@@ -136,7 +138,6 @@ public class DownloadManager {
 		}
 		MusesLog.D(d, TAG, "start task ,task name = " + downloadTask.getFileName() + "  taskid = " + downloadTask.getId());
 		if (downloadTask.getDownloadStatus() != DownloadStatus.DOWNLOAD_STATUS_COMPLETED) {
-			Toast.makeText(mContext, "已加入到下载", Toast.LENGTH_SHORT).show();
 			downloadTask.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PREPARE);
 			downloadTask.setdownFileStore(mDbHelper);
 			Log.e(TAG, "(mListener == null) " + (mListener == null));
@@ -144,7 +145,7 @@ public class DownloadManager {
 			// TODO: 2018/4/11  自定义下载任务优先级
 			mExecutorService.execute(new PriorityRunnable(Priority.LOW, downloadTask));
 		} else {
-			Toast.makeText(mContext, "下载任务已完成", Toast.LENGTH_SHORT).show();
+			mListener.onCompleted(downloadTask);
 		}
 	}
 

@@ -2,12 +2,10 @@ package com.green.kinsomy.muses;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SimpleItemAnimator;
@@ -36,8 +34,8 @@ public class MainActivity extends Activity {
 	private static final String TAG = "NewDownloader";
 	private RecyclerView mRvDownLoad;
 	private DownLoadAdapter mAdapter;
-	private DownStatus downStatus;
-	private DbHelper downFileStore;
+	private DownloadReceiver mDownloadReceiver;
+	private DbHelper mDbHelper;
 	private ArrayList<DownloadTask> mList = new ArrayList<>();
 	private ArrayList<String> mIdList = new ArrayList<>();
 
@@ -52,25 +50,19 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_new_downloader);
 		initView();
-		downStatus = new DownStatus();
-		IntentFilter f = new IntentFilter();
-		f.addAction(AbsDownloadReceiver.TASK_STARTDOWN);
-		f.addAction(AbsDownloadReceiver.TASK_DOWNLOADING);
-		f.addAction(AbsDownloadReceiver.TASK_ERROR);
-		f.addAction(AbsDownloadReceiver.TASK_COMPLETED);
-		f.addAction(AbsDownloadReceiver.TASK_CANCEL);
-		f.addAction(AbsDownloadReceiver.TASK_PAUSE);
-		LocalBroadcastManager.getInstance(this).registerReceiver(downStatus, new IntentFilter(f));
+		mDownloadReceiver = new DownloadReceiver();
+		mDownloadReceiver.register(this);
 		mManager = new DownloadManager(this);
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(downStatus);
-		if(mManager != null){
+		mDownloadReceiver.unRegister(this);
+		if (mManager != null) {
 			mManager = null;
 		}
+
 	}
 
 	private void startDown() {
@@ -123,18 +115,20 @@ public class MainActivity extends Activity {
 		});
 	}
 
-	private class DownStatus extends AbsDownloadReceiver {
+	private class DownloadReceiver extends AbsDownloadReceiver {
 
 
-		@Override
-		public void onTaskDownloadingEvent(DownloadTask task) {
-			String id = task.getId();
-			long complete = task.getCompletedSize();
-			long total = task.getTotalSize();
-			mAdapter.notifyItem(id, complete, total);
+
+		public void onTaskDownloadingEvent(DownloadTask task, boolean showProgress) {
+			if (showProgress) {
+				String id = task.getId();
+				long complete = task.getCompletedSize();
+				long total = task.getTotalSize();
+				mAdapter.notifyItem(id, complete, total);
+			}
 		}
 
-		@Override
+			@Override
 		public void onTaskStartEvent(DownloadTask task) {
 			if (!mIdList.contains(task.getId())) {
 				mList.add(task);
@@ -168,8 +162,8 @@ public class MainActivity extends Activity {
 		new AsyncTask<Void, Void, Void>() {
 			@Override
 			protected Void doInBackground(Void... params) {
-				downFileStore = DbHelper.getInstance(MainActivity.this);
-				mList = downFileStore.getAllRecordTasks();
+				mDbHelper = DbHelper.getInstance(MainActivity.this);
+				mList = mDbHelper.getAllRecordTasks();
 				for (DownloadTask task : mList) {
 					if (!mIdList.contains(task.getId())) {
 						mIdList.add(task.getId());

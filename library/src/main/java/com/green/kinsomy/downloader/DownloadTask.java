@@ -94,7 +94,12 @@ public class DownloadTask implements Runnable, Parcelable {
 			conn = tryConnect(url);
 			if (conn != null) {
 				inputStream = conn.getInputStream();
-				mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
+				if (mTotalSize <= 0) {
+					mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING_WITHOUT_PROGRESS;
+				} else {
+					mDownloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
+				}
+
 				startTimer();
 				bis = new BufferedInputStream(inputStream);
 				byte[] buffer = new byte[4 * 1024];
@@ -215,7 +220,7 @@ public class DownloadTask implements Runnable, Parcelable {
 			return tryConnect(url);
 		} else {
 			mRetry = 0;
-			onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
+			onError(DownloadTaskListener.DOWNLOAD_ERROR_HTTP_ERROR);
 			return null;
 		}
 	}
@@ -387,10 +392,13 @@ public class DownloadTask implements Runnable, Parcelable {
 		setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_CANCEL);
 		File temp = new File(mSaveDirPath + mFileName);
 		if (temp.exists()) temp.delete();
+		stopTimer();
 	}
 
 	public void pause() {
 		setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PAUSE);
+		stopTimer();
+
 	}
 
 	private void onPrepare() {

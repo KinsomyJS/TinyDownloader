@@ -64,9 +64,10 @@ public class SingleTaskActivity extends Activity {
 
 	private class DownStatus extends AbsDownloadReceiver {
 		@Override
-		public void onTaskDownloadingEvent(DownloadTask task) {
+		public void onTaskDownloadingEvent(DownloadTask task, boolean showProgress) {
+
 			String id = task.getId();
-			if(id.equals("id_test")) {
+			if (id.equals("id_test") && showProgress) {
 				long complete = task.getCompletedSize();
 				long total = task.getTotalSize();
 				int percent = (int) ((100 * complete) / total);

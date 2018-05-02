@@ -18,8 +18,8 @@ public interface DownloadTaskListener {
 
     void onError(DownloadTask downloadTask, int errorCode);
 
-    int DOWNLOAD_ERROR_FILE_NOT_FOUND = -1;
-    int DOWNLOAD_ERROR_IO_ERROR = -2;
-    int DOWNLOAD_ERROR_HTTP_ERROR = -3;
+    int DOWNLOAD_ERROR_FILE_NOT_FOUND = 0x01;
+    int DOWNLOAD_ERROR_IO_ERROR = 0x02;
+    int DOWNLOAD_ERROR_HTTP_ERROR = 0x03;
 
 }
