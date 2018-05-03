@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class PriorityExecutor extends ThreadPoolExecutor {
+class PriorityExecutor extends ThreadPoolExecutor {
 
 	private static final int CORE_POOL_SIZE = 5;//核心线程池大小
 	private static final int MAXIMUM_POOL_SIZE = 20;//最大线程池队列大小

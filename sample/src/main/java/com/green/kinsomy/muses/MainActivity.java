@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SimpleItemAnimator;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +21,6 @@ import android.widget.Toast;
 import com.green.kinsomy.downloader.AbsDownloadReceiver;
 import com.green.kinsomy.downloader.DownloadManager;
 import com.green.kinsomy.downloader.DownloadTask;
-import com.green.kinsomy.downloader.MusesLog;
 import com.green.kinsomy.downloader.db.DbHelper;
 
 import java.util.ArrayList;
@@ -76,19 +76,19 @@ public class MainActivity extends Activity {
 		mNames.add("test3");
 		mNames.add("test4");
 		mNames.add("test5");
-		DownloadTask task1 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/","kotlin-docs.pdf", mUrls.get(0),"test1");
+		DownloadTask task1 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/", "kotlin-docs.pdf", mUrls.get(0), "test1");
 		mManager.startTask(task1);
 
-		DownloadTask task2 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/","38&ext=.exe", mUrls.get(1),"test2");
+		DownloadTask task2 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/", "38&ext=.exe", mUrls.get(1), "test2");
 		mManager.startTask(task2);
 
-		DownloadTask task3 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/","QQ_718.apk", mUrls.get(2),"test3");
+		DownloadTask task3 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/", "QQ_718.apk", mUrls.get(2), "test3");
 		mManager.startTask(task3);
 
-		DownloadTask task4 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/","darwin-stable.zip", mUrls.get(3),"test4");
+		DownloadTask task4 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/", "darwin-stable.zip", mUrls.get(3), "test4");
 		mManager.startTask(task4);
 
-		DownloadTask task5 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/","6516ad8.apk", mUrls.get(4),"test5");
+		DownloadTask task5 = mManager.addDownloadTask(Environment.getExternalStorageDirectory().getAbsolutePath() + "/newdownload/", "6516ad8.apk", mUrls.get(4), "test5");
 		mManager.startTask(task5);
 
 	}
@@ -118,7 +118,6 @@ public class MainActivity extends Activity {
 	private class DownloadReceiver extends AbsDownloadReceiver {
 
 
-
 		public void onTaskDownloadingEvent(DownloadTask task, boolean showProgress) {
 			if (showProgress) {
 				String id = task.getId();
@@ -128,7 +127,7 @@ public class MainActivity extends Activity {
 			}
 		}
 
-			@Override
+		@Override
 		public void onTaskStartEvent(DownloadTask task) {
 			if (!mIdList.contains(task.getId())) {
 				mList.add(task);
@@ -169,7 +168,7 @@ public class MainActivity extends Activity {
 						mIdList.add(task.getId());
 					}
 				}
-				MusesLog.D(d, TAG, " mlist size = " + mList.size());
+				Log.d(TAG, " mlist size = " + mList.size());
 				return null;
 			}
 
@@ -200,7 +199,7 @@ public class MainActivity extends Activity {
 		public void notifyItem(String taskId, long completed, long total) {
 			int index = currentTaskList.indexOf(taskId);
 			if (index != -1) {
-				MusesLog.D(d, TAG, "notifyItem " + index + "completed = " + completed + "  total = " + total);
+				Log.d(TAG, "notifyItem " + index + "completed = " + completed + "  total = " + total);
 				mList.get(index).setCompletedSize(completed);
 				mList.get(index).setTotalSize(total);
 				notifyItemChanged(index);

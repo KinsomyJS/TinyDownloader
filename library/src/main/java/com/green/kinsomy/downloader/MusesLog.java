@@ -5,7 +5,7 @@ import android.util.Log;
 /**
  * Created by kinsomy on 2018/4/9.
  */
-public class MusesLog {
+class MusesLog {
 	public static void D(boolean print, String tag, String content) {
 		if (print)
 			Log.d(tag, content);
