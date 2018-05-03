@@ -20,7 +20,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class DownloaderSQLiteOpenHelper extends SQLiteOpenHelper {
+class DownloaderSQLiteOpenHelper extends SQLiteOpenHelper {
 
     public static final String DATABASENAME = "download.db";
     private static final int VERSION = 4;

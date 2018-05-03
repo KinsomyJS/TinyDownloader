@@ -5,6 +5,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -12,7 +13,6 @@ import android.widget.TextView;
 import com.green.kinsomy.downloader.AbsDownloadReceiver;
 import com.green.kinsomy.downloader.DownloadManager;
 import com.green.kinsomy.downloader.DownloadTask;
-import com.green.kinsomy.downloader.MusesLog;
 
 
 /**
@@ -78,7 +78,7 @@ public class SingleTaskActivity extends Activity {
 
 		@Override
 		public void onTaskStartEvent(DownloadTask task) {
-			MusesLog.D(true, TAG, "TASK_STARTDOWN");
+			Log.d(TAG, "TASK_STARTDOWN");
 		}
 
 		@Override
